@@ -52,9 +52,19 @@ def handle_message(message):
     msg = message.text.lower()
 
     if any(word in msg for word in bad_words):
-        bot.reply_to(message, "⚠️ Не ругайся и не оскорбляй.")
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(message.chat.id, "⚠️ Сообщение удалено: не ругайся и не оскорбляй.")
+        except Exception as e:
+            print(f"❌ Не удалось удалить сообщение: {e}")
+            bot.reply_to(message, "⚠️ Не ругайся и не оскорбляй.")
     elif any(kw in msg for kw in spam_keywords):
-        bot.reply_to(message, "🚫 Спам/бот-объявление. Уведомите администратора.")
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(message.chat.id, "🚫 Спам удалён. Уведомите администратора, если это ошибка.")
+        except Exception as e:
+            print(f"❌ Не удалось удалить спам: {e}")
+            bot.reply_to(message, "🚫 Спам/бот-объявление. Уведомите администратора.")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000)
