@@ -27,9 +27,25 @@ def getMessage():
 
 @app.route('/')
 def webhook():
+    WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL")
+
+    if not WEBHOOK_HOST:
+        return "❌ RENDER_EXTERNAL_URL не задан", 500
+
+    if not WEBHOOK_HOST.endswith('/'):
+        WEBHOOK_HOST += '/'
+
+    WEBHOOK_URL = WEBHOOK_HOST + TOKEN
+    print(f"📡 Устанавливаем webhook на: {WEBHOOK_URL}")
+
     bot.remove_webhook()
-    bot.set_webhook(url=os.getenv("RENDER_EXTERNAL_URL") + TOKEN)
-    return "!", 200
+    success = bot.set_webhook(url=WEBHOOK_URL)
+
+    if success:
+        return "✅ Webhook установлен!", 200
+    else:
+        return "❌ Не удалось установить webhook", 500
+
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
