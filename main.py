@@ -1,7 +1,10 @@
-
 from flask import Flask, request
 import telebot
 import os
+import logging
+
+# Настройка логирования для Render
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN)
@@ -12,10 +15,13 @@ bad_words = [
     'хуй', 'пизд', 'бляд', 'еба', 'мразь', 'ублюдок', 'сука', 'гондон', 'пидор',
     'совок', 'скуф', 'шлюха', 'нацист', 'фашист', 'гомик', 'жид', 'чурка', 'петух'
 ]
+
+# Ключевые слова, указывающие на спам/ботов
 spam_keywords = [
     'ищу парня', 'ищу девушку', 'заработай', 'заработок', '18+', 'секс',
     'вебкам', 'интим', 'наркотики', 'дешёвые деньги', 'переходи по ссылке',
-    'деньги без вложений'
+    'деньги без вложений', 'chatgpt', 'openai', 'нейросеть', 'искусственный интеллект',
+    'ai girlfriend', 'нейросексуал', 'бот-девушка', 'создай нейросеть', 'gpt бот', 'tg ai bot'
 ]
 
 @app.route('/' + TOKEN, methods=['POST'])
@@ -46,25 +52,29 @@ def webhook():
     else:
         return "❌ Не удалось установить webhook", 500
 
-
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
-    msg = message.text.lower()
+    if not message.text:
+        return
 
-    if any(word in msg for word in bad_words):
-        try:
-            bot.delete_message(message.chat.id, message.message_id)
-            bot.send_message(message.chat.id, "⚠️ Сообщение удалено: не ругайся и не оскорбляй.")
-        except Exception as e:
-            print(f"❌ Не удалось удалить сообщение: {e}")
-            bot.reply_to(message, "⚠️ Не ругайся и не оскорбляй.")
-    elif any(kw in msg for kw in spam_keywords):
-        try:
-            bot.delete_message(message.chat.id, message.message_id)
-            bot.send_message(message.chat.id, "🚫 Спам удалён. Уведомите администратора, если это ошибка.")
-        except Exception as e:
-            print(f"❌ Не удалось удалить спам: {e}")
-            bot.reply_to(message, "🚫 Спам/бот-объявление. Уведомите администратора.")
+    msg = message.text.lower()
+    user = message.from_user.username or f"id:{message.from_user.id}"
+    chat_id = message.chat.id
+    full_text = message.text.replace('\n', ' ').strip()
+
+    try:
+        if any(word in msg for word in bad_words):
+            bot.delete_message(chat_id, message.message_id)
+            bot.send_message(chat_id, f"⚠️ Сообщение от @{user} было удалено модератором.")
+            logging.info(f"[Мат] Удалено сообщение от @{user} в чате {chat_id}: {full_text}")
+
+        elif any(kw in msg for kw in spam_keywords):
+            bot.delete_message(chat_id, message.message_id)
+            bot.send_message(chat_id, f"🚫 Сообщение от @{user} было удалено как спам.")
+            logging.info(f"[Спам] Удалено сообщение от @{user} в чате {chat_id}: {full_text}")
+
+    except Exception as e:
+        logging.error(f"[Ошибка] при удалении сообщения от @{user}: {e}")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000)
