@@ -2,9 +2,14 @@ from flask import Flask, request
 import telebot
 import os
 import logging
+import sys
 
-# Настройка логирования для Render
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+# Настройка логирования: вывод в stdout, чтобы Render видел
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN)
